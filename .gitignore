@@ -3,3 +3,4 @@ origo/proxy/local_storage/*.txt
 origo/proxy/local_storage/*.raw
 origo/proxy/local_storage/*.json
 forum-app/logs/
+.*
