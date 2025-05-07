@@ -45,7 +45,7 @@ type RequestData struct {
 func NewRequest() RequestTLS {
 	return RequestTLS{
 		ServerDomain:    "homes.cs.washington.edu",
-		ServerPath:      "/~tyagi", // "testserver.origodata.io"
+		ServerPath:      "/~tyagi/", // "testserver.origodata.io"
 		ProxyURL:        "localhost:8082",
 		UrlPrivateParts: "",
 		AccessToken:     "",

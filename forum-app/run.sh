@@ -6,35 +6,34 @@ LOGDIR="$ROOT/forum-app/logs"
 mkdir -p "$LOGDIR"
 
 echo "▶ 1) start proxy"
-(cd "$ROOT/proxy" && go run main.go -listen \
+(cd "$ROOT/origo/proxy" && go run main.go -listen \
      >"$LOGDIR/proxy.out" 2>&1 & echo $! >"$LOGDIR/proxy.pid")
-sleep 1
 
 echo "▶ 2) client → TLS request (through proxy)"
-(cd "$ROOT/client" && go run main.go -request)
+(cd "$ROOT/origo/client" && go run main.go -request)
 
 echo "▶ 3) client → post‑process handshake"
-(cd "$ROOT/client" && go run main.go -postprocess-kdc)
+(cd "$ROOT/origo/client" && go run main.go -postprocess-kdc)
 
 echo "▶ 4) client → post‑process record"
-(cd "$ROOT/client" && go run main.go -postprocess-record)
+(cd "$ROOT/origo/client" && go run main.go -postprocess-record)
 
 echo "▶ 5) proxy → confirm public inputs"
-(cd "$ROOT/proxy" && go run main.go -postprocess)
+(cd "$ROOT/origo/proxy" && go run main.go -postprocess)
 
 echo "▶ 6) proxy → ZK setup (only needed once)"
 if [ ! -f "$ROOT/proxy/keys/vk" ]; then
-  (cd "$ROOT/proxy" && go run main.go -debug -setup)
+  (cd "$ROOT/origo/proxy" && go run main.go -debug -setup)
 fi
 
 echo "▶ 7) client → prove"
-(cd "$ROOT/client" && go run main.go -prove)
+(cd "$ROOT/origo/client" && go run main.go -prove)
 
 echo "▶ 8) proxy → verify"
-(cd "$ROOT/proxy" && go run main.go -debug -verify)
+(cd "$ROOT/origo/proxy" && go run main.go -debug -verify)
 
 echo "▶ 9) proxy → stats"
-(cd "$ROOT/proxy" && go run main.go -debug -stats)
+(cd "$ROOT/origo/proxy" && go run main.go -debug -stats)
 
 echo "✅  complete"
 
