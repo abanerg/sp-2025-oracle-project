@@ -1,3 +1,5 @@
-origo/client/local_storage/
-origo/proxy/local_storage/
+origo/client/local_storage/*.json
+origo/proxy/local_storage/*.txt
+origo/proxy/local_storage/*.raw
+origo/proxy/local_storage/*.json
 forum-app/logs/
