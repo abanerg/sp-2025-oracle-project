@@ -8,6 +8,7 @@ mkdir -p "$LOGDIR"
 echo "▶ 1) start proxy"
 (cd "$ROOT/origo/proxy" && go run main.go -listen \
      >"$LOGDIR/proxy.out" 2>&1 & echo $! >"$LOGDIR/proxy.pid")
+sleep 2
 
 echo "▶ 2) client → TLS request (through proxy)"
 (cd "$ROOT/origo/client" && go run main.go -request)
