@@ -1,2 +1,3 @@
-./origo/client/local_storage
-./origo/proxy/local_storage
+origo/client/local_storage/
+origo/proxy/local_storage/
+forum-app/logs/
