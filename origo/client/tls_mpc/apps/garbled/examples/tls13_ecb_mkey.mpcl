@@ -1,0 +1,302 @@
+// -*- go -*-
+
+package main
+
+import (
+	"crypto/aes"
+)
+
+// these sample values compute response (server side kdc) data ecbs
+
+// Tests:
+// H2: 825e4f79bbcb0e8adb287cac19c378145b7d6c465734422da6882463eadc9057
+// H0: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+// H3: 803fe80818374bc995571054979e54a316f266b4908ed43f5df4752bdef093b8
+// H7: 2958b125185bf3922e4dfdd580027cc7122bcdc5a9dd5ae82c5e37ac5f729e81
+// dHS: 70ee9987162bea6719acab976843acf95514f46d19872c2fabfa1a7bf32c5025
+// MS: b02d8f9d19b3ae1ba8d00106dac1ed6b2ea55da3fae83b1f66677fa6a781755f
+// SATS: b334fa6ef436aa7767b48ca30dfc567de973ecc692b7da661f486f25754de6c1
+// ECB1: 895b8c63da8da17e9d6d30c62f09d6f5
+// ECBK: 9b89f7120fe41972a4e81f2e63453807
+// serverIv: cac3cc248a5e1db3ebbd2a8a
+// serverKey: 2ca886649783b6cd626a4b04a96be1ef
+// masked server key: 6aef6d1268542295622ce7f43fbd564d (mask: 4647eb76ffd794580046acf096d6b7a2)
+
+// used to check/match ecb32, ecb33
+// chipertext chunks: ce64df1813d37137142dc0579dc7f4e2ba4f8c7e1fe62b23747998b59da16a3f
+// chunkIndex: 32
+// number chunks: 2
+// plaintext chunks: 302c353631204575726f227d2c227072696365223a2233383030322e32222c22
+
+// dES: 0x6f2615a108c702c5678f54fc9dbab69716c076189c48250cebeac3576c3611ba
+// cShare: 0x677f7ff26ac202469e1a2d39dc001c5e7fcfb1f967a3cb4affa51185facc57ac
+// pShare: 0xfbe470a4a1e11bbaa2ebb9da082924f99a20681e5feed0000e2d2b5e613d22df
+// pModP: 0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff
+// HS: c571a176894ac7aff65d52522f4d0861060f3c3b96144567dd10fa79d218d878
+// label+H2: 0x002012746c7331332063206873207472616666696320825e4f79bbcb0e8adb287cac19c378145b7d6c465734422da6882463eadc905701
+// mH0=label+H0: 0x00200d746c733133206465726976656420e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b85501
+// mH3=serverlabel+H3: 0x002012746c7331332073206170207472616666696320803fe80818374bc995571054979e54a316f266b4908ed43f5df4752bdef093b801
+// server mIv: 0x000c08746c7331332069760001 (generated with 12)
+// server mKey: 0x001009746c733133206b65790001 (generated with 16)
+
+// secret mask1 (16 bytes): 0x4647eb76ffd794580046acf096d6b7a2
+// tmp: 4082b187e6b70544b011f80bed4c686b
+
+// server MPCLDIR=./../../ ./garbled -v -i 0x4647eb76ffd794580046acf096d6b7a2 examples/tls13_ecb_mkey.mpcl
+// client MPCLDIR=./../../ ./garbled -v -i 0x4647eb76ffd794580046acf096d6b7a2 examples/tls13_ecb_mkey.mpcl
+type Garbler struct {
+	mask [16]byte
+}
+
+// server MPCLDIR=./../../ ./garbled -e -v -i 0x6aef6d1268542295622ce7f43fbd564d,0xcac3cc248a5e1db3ebbd2a8a examples/tls13_ecb_mkey.mpcl
+// client MPCLDIR=./../../ ./garbled -e -v -i 0xd5ad091155c804d0f135f394a376ed7f,0xd06ac7f19c2b18e01a62686e examples/tls13_ecb_mkey.mpcl
+type Evaluator struct {
+	maskedKey [16]byte
+	iv        [12]byte
+}
+
+// 2kB, set 125 ecbs
+// 16kB, set 1000 ecbs
+// 256B, set 16 ecbs
+
+// return: protected ecbk,ecb1, and ecbs with counter>1 in one slice
+func main(g Garbler, e Evaluator) (uint128, uint128, []byte) {
+
+	// combine mask and key
+	var key [16]byte
+	for i := 0; i < 16; i++ {
+		key[i] = e.maskedKey[i] ^ g.mask[i]
+	}
+
+	var counter [aes.BlockSize]byte
+	counter = memcpy(counter, 0, e.iv, 0)
+	counter = incr(counter)
+	e0 := byteToUint128(aes.Block128(key, counter))
+	var block [aes.BlockSize]byte
+	// h = E(k, 0^128)
+	h := byteToUint128(aes.Block128(key, block))
+
+	numberECBs := (16 * 16)
+	// ecbVector := make([]byte, numberECBs+16)
+	var ecbVector [numberECBs]byte
+
+	for i := 0; i < numberECBs; i += aes.BlockSize {
+		counter = incr(counter)
+		block = aes.Block128(key, counter)
+		for j := 0; i+j < numberECBs && j < aes.BlockSize; j++ {
+			ecbVector[i+j] = block[j]
+		}
+	}
+
+	return e0, h, ecbVector[:]
+
+	// compute authtag ecbs (ecbk, ecb1)
+	// var zeros16 [16]byte
+	// ECBK := aes.Block128(key, zeros16)
+	// nonce := getNonce(e.iv, 1)
+	// ECB1 := aes.Block128(key, nonce)
+
+	// compute two example chunks to verify if ECB computation for record data works
+	// nonce2 := getNonce(e.iv, 32)
+	// ECB32 := aes.Block128(key, nonce2)
+	// nonce3 := getNonce(e.iv, 33)
+	// ECB33 := aes.Block128(key, nonce3)
+	// add as many ecbs as required...
+
+	// fill output slice
+	// var ecbs [64]byte
+	// for i := 0; i < 16; i++ {
+	// 	ecbs[i] = ECBK[i]
+	// 	ecbs[16+i] = ECB1[i]
+	// 	ecbs[32+i] = ECB32[i]
+	// 	ecbs[48+i] = ECB33[i]
+	// }
+
+	// return ecbs
+}
+
+func byteToUint128(x [16]byte) uint128 {
+	var r uint128
+
+	for i := 0; i < len(x); i++ {
+		r <<= 8
+		r |= uint128(x[i])
+	}
+	return r
+}
+
+func uint128ToByte(x uint128) [16]byte {
+	var r [16]byte
+
+	for i := 0; i < 16; i++ {
+		r[15-i] = x & 0xff
+		x >>= 8
+	}
+	return r
+}
+
+func incr(counter [aes.BlockSize]byte) [aes.BlockSize]byte {
+	var c uint32
+
+	for i := 0; i < 4; i++ {
+		c <<= 8
+		c |= uint32(counter[12+i])
+	}
+	c++
+	for i := 0; i < 4; i++ {
+		counter[15-i] = c & 0xff
+		c >>= 8
+	}
+	return counter
+}
+
+func memcpy(dst []byte, dstOfs int, src []byte, srcOfs int) []byte {
+	for i := 0; srcOfs+i < len(src) && dstOfs+i < len(dst); i++ {
+		dst[dstOfs+i] = src[srcOfs+i]
+	}
+	return dst
+}
+
+func byteToUint512(x [64]byte) uint512 {
+	var r uint512
+
+	for i := 0; i < len(x); i++ {
+		r <<= 8
+		r |= uint512(x[i])
+	}
+	return r
+}
+
+func uint512ToByte(x uint512) [64]byte {
+	var r [64]byte
+
+	for i := 0; i < 64; i++ {
+		r[63-i] = x & 0xff
+		x >>= 8
+	}
+	return r
+}
+
+func getNonce(iv [12]byte, counter uint32) [16]byte {
+	var nonce [16]byte
+	for i := 0; i < 12; i++ {
+		nonce[i] = iv[i]
+	}
+	// var counter uint32
+	// counter = 1
+	counterBytes := uint32ToByte(counter)
+	for i := 0; i < 4; i++ {
+		nonce[12+i] = counterBytes[i]
+	}
+	return nonce
+}
+
+func uint32ToByte(x uint32) [4]byte {
+	var r [4]byte
+
+	for i := 0; i < 4; i++ {
+		r[3-i] = x & 0xff
+		x >>= 8
+	}
+	return r
+}
+
+// playground to generate labels
+// You can edit this code!
+// Click here and start typing.
+// package main
+
+// import (
+// 	"bytes"
+// 	"encoding/binary"
+// 	"encoding/hex"
+// 	"fmt"
+// )
+
+// func main() {
+// 	label := "tls13 derived"
+// 	transcript, err := hex.DecodeString("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+// 	if err != nil {
+// 		fmt.Println("eeror...")
+// 	}
+// 	size := 32 // with sha256
+
+// 	var b bytes.Buffer
+// 	length := make([]byte, 2)
+// 	binary.BigEndian.PutUint16(length, uint16(size))
+// 	b.Write(length)
+// 	tmp := "tls13 " + label
+// 	b.Write([]byte{byte(len(tmp))})
+// 	b.Write([]byte(tmp))
+// 	b.Write([]byte{byte(len(transcript))})
+// 	b.Write(transcript)
+// 	b.Write([]byte{1})
+
+// 	fmt.Println(len(b.Bytes()))
+// 	fmt.Println("hex label:", hex.EncodeToString(b.Bytes()))
+// 	// f3479740bf7cf199c06b6464197b3e5730390a0da0227351eb26cc4fe42eee4e36363636363636363636363636363636363636363636363636363636363636362012746c7331332073206873207472616666696320825e4f79bbcb0e8adb287cac19c378145b7d6c465734422da6882463eadc90570100
+// }
+
+// playground code to generate mask (take 16 byte mask for key)
+// package main
+
+// import (
+// 	"crypto/rand"
+// 	"crypto/sha256"
+// 	"encoding/hex"
+// 	"fmt"
+// 	"io"
+// 	"os"
+
+// 	"golang.org/x/crypto/hkdf"
+// )
+
+// func getSalt(n int) []byte {
+// 	nonce := make([]byte, n)
+// 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+// 		panic(err.Error())
+// 	}
+// 	return (nonce)
+
+// }
+
+// func main() {
+// 	hash := sha256.New
+// 	s := "The quick brown fox jumps over the lazy dog"
+// 	salt := getSalt(hash().Size())
+
+// 	info := []byte("")
+
+// 	argCount := len(os.Args[1:])
+
+// 	if argCount > 0 {
+// 		s = os.Args[1]
+// 	}
+// 	secret := []byte(s)
+
+// 	kdf := hkdf.New(hash, secret, salt, info)
+
+// 	key1 := make([]byte, 16)
+// 	_, _ = io.ReadFull(kdf, key1)
+
+// 	fmt.Printf("Secret: %s\n", s)
+// 	fmt.Printf("HKDF 16 byte key: %x\n", key1)
+
+// 	key2 := make([]byte, 32)
+// 	_, _ = io.ReadFull(kdf, key2)
+
+// 	fmt.Printf("HKDF 32 byte key: %x\n", key2)
+
+// 	maskedKey := "d5ad091155c804d0f135f394a376ed7f"
+// 	mask := "4647eb76ffd794580046acf096d6b7a2"
+// 	maskedKeyBytes, _ := hex.DecodeString(maskedKey)
+// 	maskBytes, _ := hex.DecodeString(mask)
+
+// 	key := make([]byte, 16)
+// 	for i := 0; i < 16; i++ {
+// 		key[i] = maskBytes[i] ^ maskedKeyBytes[i]
+// 	}
+
+// 	fmt.Println("recovered key:", hex.EncodeToString(key))
+
+// }

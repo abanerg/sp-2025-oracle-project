@@ -1,0 +1,61 @@
+// -*- go -*-
+
+package main
+
+import (
+	"crypto/aes"
+	"crypto/hmac"
+)
+
+// MPCLDIR=./../../ ./garbled -v -i 0x4647eb76ffd794580046acf096d6b7a2 examples/tls13_ecb_auth_mkey.mpcl
+type Garbler struct {
+	mask [16]byte
+}
+
+// MPCLDIR=./../../ ./garbled -e -v -i 0x6aef6d1268542295622ce7f43fbd564d,0xcac3cc248a5e1db3ebbd2a8a examples/tls13_ecb_auth_mkey.mpcl
+type Evaluator struct {
+	maskedKey [16]byte
+	iv        [12]byte
+}
+
+// return: protected ecbk,ecb1, and ecbs with counter>1 in one slice
+func main(g Garbler, e Evaluator) ([]byte, []byte) {
+
+	// combine mask and key
+	var key [16]byte
+	for i := 0; i < 16; i++ {
+		key[i] = e.maskedKey[i] ^ g.mask[i]
+	}
+
+	// compute authtag ecbs (ecbk, ecb1)
+	var zeros16 [16]byte
+	ECBK := aes.Block128(key, zeros16)
+	nonce := getNonce(e.iv, 1)
+	ECB1 := aes.Block128(key, nonce)
+
+	return ECBK, ECB1
+}
+
+func getNonce(iv [12]byte, counter uint32) [16]byte {
+	var nonce [16]byte
+	for i := 0; i < 12; i++ {
+		nonce[i] = iv[i]
+	}
+	// var counter uint32
+	// counter = 1
+	counterBytes := uint32ToByte(counter)
+	for i := 0; i < 4; i++ {
+		nonce[12+i] = counterBytes[i]
+	}
+	return nonce
+}
+
+func uint32ToByte(x uint32) [4]byte {
+	var r [4]byte
+
+	for i := 0; i < 4; i++ {
+		r[3-i] = x & 0xff
+		x >>= 8
+	}
+	return r
+}
