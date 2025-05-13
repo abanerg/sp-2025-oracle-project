@@ -1,7 +1,7 @@
 {
-    "substring": "\"current_user_url\"",
+    "substring": "\"netid\"",
     "value_start_idx_after_ss": 3,
-    "value_length": 26,
+    "value_length": 8,
     "threshold_value": "20",
     "value_constraint": "GT"
 }

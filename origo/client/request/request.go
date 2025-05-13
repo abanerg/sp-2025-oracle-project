@@ -40,10 +40,15 @@ type RequestData struct {
 // 		UrlPrivateParts: "",
 // 		AccessToken:     "",
 // 		StorageLocation: "./local_storage/",
+//    Cookie:          "",
 // 	}
 // }
 
 func NewRequest() RequestTLS {
+	data, err := os.ReadFile("../../forum-app/cookie.txt")
+	boolean := err == nil
+	println("cookie file exists: ", boolean, err)
+	println("cookie data: ", string(data))
 	return RequestTLS{
 		ServerDomain:    "identity.uw.edu",
 		ServerPath:      "/profile/api/profile/", // "testserver.origodata.io"
@@ -51,7 +56,7 @@ func NewRequest() RequestTLS {
 		UrlPrivateParts: "",
 		AccessToken:     "",
 		StorageLocation: "./local_storage/",
-		Cookie:          "",
+		Cookie:          string(data),
 	}
 }
 
