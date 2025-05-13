@@ -4,7 +4,7 @@ import os
 
 def main():
     try:
-        input("Press Enter to start the verification process...")
+        input("Press Enter to start the verification process...\n")
 
         script_path = os.path.join(os.path.dirname(__file__), "run.sh")
         result = subprocess.run(["bash", script_path], check=True)

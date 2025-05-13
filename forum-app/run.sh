@@ -29,19 +29,19 @@ echo "4) client → post‑process record"
 echo "5) proxy → confirm public inputs"
 (cd "$ROOT/origo/proxy" && go run main.go -postprocess)
 
-# echo "6) proxy → ZK setup (only needed once)"
-# # if [ ! -f "$ROOT/proxy/keys/vk" ]; then
-# (cd "$ROOT/origo/proxy" && go run main.go -debug -setup)
-# # fi
+echo "6) proxy → ZK setup (only needed once)"
+# if [ ! -f "$ROOT/proxy/keys/vk" ]; then
+(cd "$ROOT/origo/proxy" && go run main.go -debug -setup)
+# fi
 
-# echo "7) client → prove"
-# (cd "$ROOT/origo/client" && go run main.go -prove)
+echo "7) client → prove"
+(cd "$ROOT/origo/client" && go run main.go -prove)
 
-# echo "8) proxy → verify"
-# (cd "$ROOT/origo/proxy" && go run main.go -debug -verify)
+echo "8) proxy → verify"
+(cd "$ROOT/origo/proxy" && go run main.go -debug -verify)
 
-# echo "▶ 9) proxy → stats"
-# (cd "$ROOT/origo/proxy" && go run main.go -debug -stats)
+echo "▶ 9) proxy → stats"
+(cd "$ROOT/origo/proxy" && go run main.go -debug -stats)
 
 echo "Successfully completed."
 
