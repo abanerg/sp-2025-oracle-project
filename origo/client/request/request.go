@@ -24,7 +24,7 @@ type RequestTLS struct {
 	UrlPrivateParts string
 	AccessToken     string
 	StorageLocation string
-	Cookie 				string
+	Cookie          string
 }
 
 type RequestData struct {
@@ -87,9 +87,7 @@ func (r *RequestTLS) Store(data RequestData) error {
 	return err
 }
 
-
 func (r *RequestTLS) Call(hsOnly bool) (RequestData, error) {
-
 	// tls configs
 	config := &tls.Config{
 		InsecureSkipVerify:       false,
@@ -100,7 +98,8 @@ func (r *RequestTLS) Call(hsOnly bool) (RequestData, error) {
 		CipherSuites: []uint16{
 			tls.TLS_AES_128_GCM_SHA256,
 		},
-		ServerName: r.ServerDomain,
+		ServerName:             r.ServerDomain,
+		SessionTicketsDisabled: true,
 	}
 
 	// local server testing settings
