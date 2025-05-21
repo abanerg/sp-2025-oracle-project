@@ -63,7 +63,7 @@ func NewParser() (*Parser, error) {
 	parser.authtagPath = "../client/local_storage/recordtag_public_input.json"
 
 	// configure tls 1.3 parameters
-	parser.cipherID = tls.TLS_AES_128_GCM_SHA256
+	parser.cipherID = tls.TLS_AES_256_GCM_SHA384
 
 	// get server certificate file
 	caCert, err := ioutil.ReadFile(parser.caPath)

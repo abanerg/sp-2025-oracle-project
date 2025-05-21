@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="/Users/abanerg/Desktop/code/sp-2025-oracle-project"  # repo root
+ROOT="/Users/keshav/sp-2025-oracle-project"  # repo root
 LOGDIR="$ROOT/forum-app/logs"
 mkdir -p "$LOGDIR"
 
@@ -30,9 +30,9 @@ echo "5) proxy → confirm public inputs"
 (cd "$ROOT/origo/proxy" && go run main.go -postprocess)
 
 echo "6) proxy → ZK setup (only needed once)"
-# if [ ! -f "$ROOT/proxy/keys/vk" ]; then
+if [ ! -f "$ROOT/proxy/keys/vk" ]; then
 (cd "$ROOT/origo/proxy" && go run main.go -debug -setup)
-# fi
+fi
 
 echo "7) client → prove"
 (cd "$ROOT/origo/client" && go run main.go -prove)

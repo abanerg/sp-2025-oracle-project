@@ -50,8 +50,8 @@ func NewRequest() RequestTLS {
 	println("cookie file exists: ", boolean, err)
 	println("cookie data: ", string(data))
 	return RequestTLS{
-		ServerDomain:    "identity.uw.edu",
-		ServerPath:      "/profile/api/profile/", // "testserver.origodata.io"
+		ServerDomain:    "identity.uw.edu",// identity.uw.edu
+		ServerPath:      "/profile/api/profile/", // "/profile/api/profile/"
 		ProxyURL:        "localhost:8082",
 		UrlPrivateParts: "",
 		AccessToken:     "",
