@@ -8,7 +8,7 @@ def main():
 
         user_input = input("Enter your secret cookie: ")
 
-        with open("cookie.txt", "w") as f:
+        with open("forum-app/cookie.txt", "w") as f:
             f.write(user_input)
 
         script_path = os.path.join(os.path.dirname(__file__), "run.sh")

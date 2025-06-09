@@ -43,6 +43,8 @@ type clientHandshakeStateTLS13 struct {
 func (hs *clientHandshakeStateTLS13) handshake() error {
 	c := hs.c
 
+	print("cipher suites is: " + fmt.Sprintf("%v", hs.hello.cipherSuites) + "\n")
+	print("chosen suite is: " + fmt.Sprintf("%v", hs.suite) + "\n")
 	if needFIPS() {
 		return errors.New("tls: internal error: TLS 1.3 reached in FIPS mode")
 	}
@@ -157,6 +159,10 @@ func (hs *clientHandshakeStateTLS13) checkServerHelloOrHRR() error {
 	}
 
 	selectedSuite := mutualCipherSuiteTLS13(hs.hello.cipherSuites, hs.serverHello.cipherSuite)
+	println("selectedSuite:", selectedSuite)
+	println("hello.cipherSuites:", hs.hello.cipherSuites)
+	println("serverHello.cipherSuite:", hs.serverHello.cipherSuite)
+
 	if hs.suite != nil && selectedSuite != hs.suite {
 		c.sendAlert(alertIllegalParameter)
 		return errors.New("tls: server changed cipher suite after a HelloRetryRequest")

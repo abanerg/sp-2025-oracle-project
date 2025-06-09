@@ -353,6 +353,7 @@ func (c *Conn) loadSession(hello *clientHelloMsg) (cacheKey string,
 	cipherSuiteOk := false
 	for _, offeredID := range hello.cipherSuites {
 		offeredSuite := cipherSuiteTLS13ByID(offeredID)
+		print(offeredSuite, "This is the offered suite")
 		if offeredSuite != nil && offeredSuite.hash == cipherSuite.hash {
 			cipherSuiteOk = true
 			break
@@ -494,6 +495,9 @@ func (hs *clientHandshakeState) handshake() error {
 }
 
 func (hs *clientHandshakeState) pickCipherSuite() error {
+	fmt.Printf(">>> client offered cipherSuites: %v", hs.hello.cipherSuites)
+	fmt.Printf(">>> server chose cipherSuite:    %v", hs.serverHello.cipherSuite)
+	print("AAAAAAAA")
 	if hs.suite = mutualCipherSuite(hs.hello.cipherSuites, hs.serverHello.cipherSuite); hs.suite == nil {
 		hs.c.sendAlert(alertHandshakeFailure)
 		return errors.New("tls: server chose an unconfigured cipher suite")
@@ -713,7 +717,7 @@ func (hs *clientHandshakeState) serverResumedSession() bool {
 
 func (hs *clientHandshakeState) processServerHello() (bool, error) {
 	c := hs.c
-
+	print(">>> serverHello: ", hs.serverHello)
 	if err := hs.pickCipherSuite(); err != nil {
 		return false, err
 	}

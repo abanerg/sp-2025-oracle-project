@@ -50,7 +50,7 @@ func NewRequest() RequestTLS {
 	println("cookie file exists: ", boolean, err)
 	println("cookie data: ", string(data))
 	return RequestTLS{
-		ServerDomain:    "identity.uw.edu",// identity.uw.edu
+		ServerDomain:    "identity.uw.edu",       // identity.uw.edu
 		ServerPath:      "/profile/api/profile/", // "/profile/api/profile/"
 		ProxyURL:        "localhost:8082",
 		UrlPrivateParts: "",
@@ -95,11 +95,9 @@ func (r *RequestTLS) Call(hsOnly bool) (RequestData, error) {
 		PreferServerCipherSuites: false,
 		MinVersion:               tls.VersionTLS13,
 		MaxVersion:               tls.VersionTLS13,
-		CipherSuites: []uint16{
-			tls.TLS_AES_128_GCM_SHA256,
-		},
-		ServerName:             r.ServerDomain,
-		SessionTicketsDisabled: true,
+		CipherSuites:             []uint16{},
+		ServerName:               r.ServerDomain,
+		SessionTicketsDisabled:   true,
 	}
 
 	// local server testing settings
