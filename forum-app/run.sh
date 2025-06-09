@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="/Users/keshav/sp-2025-oracle-project"  # repo root
+ROOT="/Users/jaysheelpandya/sp-2025-oracle-project"  # repo root
 LOGDIR="$ROOT/forum-app/logs"
 mkdir -p "$LOGDIR"
 
@@ -48,5 +48,3 @@ echo "Successfully completed."
 # Clean‑up
 (cd "$ROOT/origo/client/local_storage" && rm -f *.json 2>/dev/null || true)
 (cd "$ROOT/origo/proxy/local_storage" && rm -f *.* 2>/dev/null || true)
-kill "$(cat "$LOGDIR/proxy.pid")"
-rm "$LOGDIR/proxy.pid"

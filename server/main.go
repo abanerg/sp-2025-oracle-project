@@ -1,19 +1,40 @@
 package main
 
 import (
+	"bytes"
 	"html/template"
 	"log"
 	"net/http"
 	"os/exec"
 	"strings"
+	"sync"
+	"time"
 )
 
 var tpl = template.Must(template.ParseGlob("templates/*.html"))
 
+// a very simple in-memory store
+type Post struct {
+    Author  string
+    Content string
+    Posted  time.Time
+}
+
+var (
+    postsMu sync.Mutex
+    posts   = []Post{}
+)
+
 func main() {
+    // static assets
+    fs := http.FileServer(http.Dir("static"))
+    http.Handle("/static/", http.StripPrefix("/static/", fs))
+
     http.HandleFunc("/", index)
     http.HandleFunc("/verify", verify)
     http.HandleFunc("/forum", forum)
+    http.HandleFunc("/post", createPost)
+
     log.Println("listening on :8080")
     log.Fatal(http.ListenAndServe(":8080", nil))
 }
@@ -28,28 +49,57 @@ func verify(w http.ResponseWriter, r *http.Request) {
         return
     }
     cookie := r.FormValue("cookie")
-    // write cookie to the file your origo client expects:
-    if err := exec.Command("bash", "-c", "echo "+shellQuote(cookie)+">client/local_storage/cookie.txt").Run(); err != nil {
+    // save cookie for Origo
+    if err := exec.Command("bash", "-c",
+        "echo "+shellQuote(cookie)+">../forum-app/cookie.txt",
+    ).Run(); err != nil {
         http.Error(w, "failed to save cookie", 500)
         return
     }
-    // now invoke your existing run.sh up through step 5 (handshake + proof):
-    cmd := exec.Command("bash", "../run.sh")
-    cmd.Stdout = w // for simplicity, you could buffer & detect success/fail
-    cmd.Stderr = w
+
+    // run the Origo flow
+    cmd := exec.Command("bash", "run.sh")
+    cmd.Dir = "../forum-app"
+
+    var out bytes.Buffer
+    cmd.Stdout = &out
+    cmd.Stderr = &out
+
     if err := cmd.Run(); err != nil {
-        http.Error(w, "verification failed:\n"+err.Error(), 500)
+        // on failure, show the log so you can debug
+        http.Error(w, "verification failed:\n\n"+out.String(), 500)
         return
     }
-    // success → redirect to forum
+
+    // success
     http.Redirect(w, r, "/forum", http.StatusSeeOther)
 }
 
 func forum(w http.ResponseWriter, r *http.Request) {
-    tpl.ExecuteTemplate(w, "forum.html", nil)
+    postsMu.Lock()
+    defer postsMu.Unlock()
+    tpl.ExecuteTemplate(w, "forum.html", posts)
 }
 
-// shellQuote makes a really naive single-quote wrapper:
+// handle new post submissions
+func createPost(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+        http.Redirect(w, r, "/forum", http.StatusSeeOther)
+        return
+    }
+    author := strings.TrimSpace(r.FormValue("author"))
+    content := strings.TrimSpace(r.FormValue("content"))
+    if content == "" {
+        http.Redirect(w, r, "/forum", http.StatusSeeOther)
+        return
+    }
+    postsMu.Lock()
+    posts = append([]Post{{Author: author, Content: content, Posted: time.Now()}}, posts...)
+    postsMu.Unlock()
+    http.Redirect(w, r, "/forum", http.StatusSeeOther)
+}
+
+// naive shell-quoting
 func shellQuote(s string) string {
     return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }

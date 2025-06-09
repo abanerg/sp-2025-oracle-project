@@ -5,7 +5,7 @@ origo/proxy/local_storage/*.json
 forum-app/logs/
 forum-app/cookie.txt
 origo/client/local_storage/*
-origo/proxy/local_storage/oracle_groth16.ccs
-origo/proxy/local_storage/oracle_groth16.pk
-origo/proxy/local_storage/oracle_groth16.vk
+origo/proxy/local_storage/circuits/oracle_groth16.ccs
+origo/proxy/local_storage/circuits/oracle_groth16.pk
+origo/proxy/local_storage/circuits/oracle_groth16.vk
 .*
